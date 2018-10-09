@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
@@ -55,15 +57,30 @@ public class WechatMessageController {
     }
 
 
-    @GetMapping("query")
+    @GetMapping("query1")
     public String query(){
 //        QueryBuilder builder = QueryBuilders.matchQuery("content","面试");
 //        MultiMatchQueryBuilder builder1 = QueryBuilders.multiMatchQuery("面试通过","content");
         MatchPhraseQueryBuilder builder1 = QueryBuilders.matchPhraseQuery("content","面9090990试");
         MatchPhraseQueryBuilder builder2 = QueryBuilders.matchPhraseQuery("agentName","丽姐");
         QueryBuilder qb = QueryBuilders.boolQuery().should(builder1).must(builder2);
+
+
         Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,"createTime");
         Iterable<AgentWechatMessage>  messages =  agentWechatMessageElasticRepository.search(qb,pageable);
+        return "query wechat" ;
+    }
+
+    @RequestMapping("query2")
+    public String query2(@RequestParam("agentId") String agentId, @RequestParam("content") String content){
+        LOGGER.info("agentId={},content={}",agentId,content);
+        Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,"createTime");
+//        Iterable<AgentWechatMessage>  messages =  agentWechatMessageElasticRepository.findByAgentIdAndContent(agentId,content,pageable);
+//        Iterable<AgentWechatMessage>  messages2 = agentWechatMessageElasticRepository.findByAgentIdOrContent(agentId,content,pageable);
+
+//        List<AgentWechatMessage> list1 = agentWechatMessageElasticRepository.findByAgentIdIs(agentId,pageable);
+
+        List<AgentWechatMessage> list  =agentWechatMessageElasticRepository.findByAgentIdAndContent(agentId,content,pageable);
         return "query wechat" ;
     }
 }
