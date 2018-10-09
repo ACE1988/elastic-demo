@@ -3,8 +3,6 @@ package com.example.elastic.service.mybatic;
 import com.example.elastic.entity.JJRCustomers;
 
 import org.springframework.data.repository.Repository;
-
-import java.util.Date;
 import java.util.List;
 
 
