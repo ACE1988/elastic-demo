@@ -3,9 +3,6 @@ package com.example.elastic.controller;
 import com.example.elastic.entity.JJRCustomers;
 import com.example.elastic.service.elastic.CustomerElasticRepository;
 import com.example.elastic.service.mybatic.CustomerRepository;
-import com.sun.tools.doclets.internal.toolkit.util.IndexBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 public class CustomerController {

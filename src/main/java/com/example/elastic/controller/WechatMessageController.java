@@ -10,6 +10,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -74,13 +75,13 @@ public class WechatMessageController {
     @RequestMapping("query2")
     public String query2(@RequestParam("agentId") String agentId, @RequestParam("content") String content){
         LOGGER.info("agentId={},content={}",agentId,content);
-        Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,"createTime");
+        Pageable pageable = PageRequest.of(1,100, Sort.Direction.ASC,"createTime");
 //        Iterable<AgentWechatMessage>  messages =  agentWechatMessageElasticRepository.findByAgentIdAndContent(agentId,content,pageable);
 //        Iterable<AgentWechatMessage>  messages2 = agentWechatMessageElasticRepository.findByAgentIdOrContent(agentId,content,pageable);
 
 //        List<AgentWechatMessage> list1 = agentWechatMessageElasticRepository.findByAgentIdIs(agentId,pageable);
-
-        List<AgentWechatMessage> list  =agentWechatMessageElasticRepository.findByAgentIdAndContent(agentId,content,pageable);
+        long count = agentWechatMessageElasticRepository.countByAgentId(agentId);
+        Page<AgentWechatMessage> list  =agentWechatMessageElasticRepository.findByAgentId(agentId,pageable);
         return "query wechat" ;
     }
 }

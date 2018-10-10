@@ -1,6 +1,7 @@
 package com.example.elastic.service.elastic;
 
 import com.example.elastic.entity.AgentWechatMessage;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 
@@ -21,6 +22,10 @@ public interface AgentWechatMessageElasticRepository extends ElasticsearchReposi
 
     List<AgentWechatMessage> findByAgentIdIs (String agentId,Pageable pageable);
 
+    Page<AgentWechatMessage> findByAgentId(String agentId, Pageable pageable);
+
     List<AgentWechatMessage> findByAgentIdAndContentLike (String agentId,String content,Pageable pageable);
+
+    long countByAgentId(String agentId);
 
 }
