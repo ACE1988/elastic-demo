@@ -30,5 +30,4 @@ public interface CellPhoneCallRepository extends MongoRepository<CellphoneCallRe
     @Override
     CellphoneCallRecords  save(CellphoneCallRecords entity);
 
-
 }
