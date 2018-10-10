@@ -28,4 +28,6 @@ public interface AgentWechatMessageElasticRepository extends ElasticsearchReposi
 
     long countByAgentId(String agentId);
 
+    int deleteByAgentIdAndContent(String agentId,String content);
+
 }
