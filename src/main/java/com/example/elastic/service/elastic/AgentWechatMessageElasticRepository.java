@@ -30,4 +30,7 @@ public interface AgentWechatMessageElasticRepository extends ElasticsearchReposi
 
     int deleteByAgentIdAndContent(String agentId,String content);
 
+    @Override
+    void deleteById(String id);
+
 }
