@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +54,7 @@ public class CustomerController {
     @GetMapping("/query")
     public String query(String agentId){
         Optional<JJRCustomers> cc  = customerElasticRepository.findById("1483319acbbb4ec6849350b267daf358");
+        JJRCustomers jjrCustomers = customerElasticRepository.queryByUserId(10000027L);
         QueryBuilder builder = QueryBuilders.matchPhraseQuery("agentId",agentId);
         Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,"userId");
 //        Iterable<JJRCustomers> c = customerElasticRepository.search(builder,pageable);
@@ -63,20 +65,20 @@ public class CustomerController {
         List<String> ids = elasticsearchTemplate.queryForIds(query);
 
         SearchQuery searchQuery = new NativeSearchQueryBuilder().withIds(ids).build();
-        List<JJRCustomers> jjrCustomers =  elasticsearchTemplate.queryForList(searchQuery,JJRCustomers.class);
+        List<JJRCustomers> jjrCustomersList =  elasticsearchTemplate.queryForList(searchQuery,JJRCustomers.class);
 
         UpdateQuery updateQuery = new UpdateQuery();
         updateQuery.setClazz(JJRCustomers.class);
-        updateQuery.setId("1483319acbbb4ec6849350b267daf358");
+        updateQuery.setId(jjrCustomers.getId());
         UpdateRequest updateRequest = new UpdateRequest();
-        updateRequest.doc(Requests.INDEX_CONTENT_TYPE,"agentId","010101049","agentName","彤姐");
+        updateRequest.doc(Requests.INDEX_CONTENT_TYPE,"agentId","010101049","agentName","彤姐","updateTime",new Date().getTime());
 
         updateQuery.setUpdateRequest(updateRequest);
-        updateQuery.setType("customer");
-        updateQuery.setIndexName("lxgs");
+        //updateQuery.setType("customer");
+        //updateQuery.setIndexName("lxgs");
 
         UpdateResponse response = elasticsearchTemplate.update(updateQuery);
-
+        response.getShardInfo().getSuccessful();
 //        List<JJRCustomers> customers = customerElasticRepository.findJJRCustomersByAgentIdEquals(agentId,pageable);
         return "boolean";
     }

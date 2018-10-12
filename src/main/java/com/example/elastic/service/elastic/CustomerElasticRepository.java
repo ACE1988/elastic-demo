@@ -11,9 +11,12 @@ public interface CustomerElasticRepository extends ElasticsearchRepository<JJRCu
 
     List<JJRCustomers> queryAllByUserIdBefore(long userId);
 
+    JJRCustomers queryByUserId(long userId);
 
     List<JJRCustomers> findJJRCustomersByAgentIdEquals(String agentId, Pageable pageable);
 
     JJRCustomers queryAllByUserIdAndAgentId(@Param("userId") long userId,@Param("agentId") String agentId);
+
+
 
 }

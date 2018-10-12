@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface CustomerRepository extends Repository<JJRCustomers,String> {
 
-    List<JJRCustomers> findByUserId(long userId);
+    JJRCustomers findByUserId(long userId);
 
     List<JJRCustomers> queryAllByUserIdBetween(long startUserId, long endUserId);
 
