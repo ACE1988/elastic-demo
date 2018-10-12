@@ -1,5 +1,6 @@
 package com.example.elastic.controller;
 
+import com.example.elastic.Util.DateUtils;
 import com.example.elastic.entity.JJRCustomers;
 import com.example.elastic.service.elastic.CustomerElasticRepository;
 import com.example.elastic.service.mybatic.CustomerRepository;
@@ -8,9 +9,17 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.QueryShardContext;
+import org.elasticsearch.index.query.QueryStringQueryBuilder;
+import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -26,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 
 @RestController
@@ -115,5 +126,50 @@ public class CustomerController {
             LOGGER.info("customer agentId={}",customer.getAgentId());
         }
         return "update repository" ;
+    }
+
+    //TODO 聚合查询
+    @RequestMapping("aggregation")
+    public String aggregation(){
+        SearchQuery query = new NativeSearchQueryBuilder()
+                .addAggregation(AggregationBuilders.terms("avg").field("agent"))
+                .build();
+        int size = query.getAggregations().size();
+        Page<JJRCustomers> page =  customerElasticRepository.search(query);
+        LOGGER.info("aggregation size={}",page.getTotalPages());
+        return "aggregation";
+    }
+
+    //对查询结果进行过滤
+    @RequestMapping("filter_query")
+    public String filterQuery(@RequestParam("agentId") String agentId){
+        //过滤指定字段指定值
+//        QueryBuilder filterBuilder = QueryBuilders.termsQuery("userId","10000103","10000126","10000244","10000016");
+        //指定查询字段取值范围
+//        QueryBuilder filterBuilder = QueryBuilders.rangeQuery("userId").gt("10000103").lt("10000254");
+        //小于等于
+//        QueryBuilder filterBuilder = QueryBuilders.rangeQuery("userId").lte(10000254L);
+        //大于等于
+//        QueryBuilder filterBuilder = QueryBuilders.rangeQuery("userId").gte(10000254L);
+
+        Date date = DateUtils.addDayToDate(new Date(),-20);
+        LOGGER.info("date={}",DateUtils.convert(date,DateUtils.DATE_TIME_FORMAT));
+        //时间范围
+        QueryBuilder filterBuilder = QueryBuilders.rangeQuery("registerTime").gt(date.getTime());
+
+        QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery("agentId",agentId);
+        SearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(queryBuilder)
+                .withPageable(PageRequest.of(0,10000, Sort.Direction.DESC,"userId"))
+//                .withSort(SortBuilders.fieldSort("userId"))
+                .withFilter(filterBuilder)
+                .build();
+
+        Page<JJRCustomers> page = customerElasticRepository.search(searchQuery);
+        List<JJRCustomers> list = page.getContent();
+        LOGGER.info("{},{}",DateUtils.convert(list.get(0).getRegisterTime(),DateUtils.DATE_TIME_FORMAT),
+                DateUtils.convert(list.get(list.size()-1).getRegisterTime(),DateUtils.DATE_TIME_FORMAT));
+        LOGGER.info("page total={},size={}",page.getTotalPages(),page.getContent().size());
+        return "filter query";
     }
 }
