@@ -17,6 +17,6 @@ public interface CustomerElasticRepository extends ElasticsearchRepository<JJRCu
 
     JJRCustomers queryAllByUserIdAndAgentId(@Param("userId") long userId,@Param("agentId") String agentId);
 
-
-
+    @Override
+    JJRCustomers save(JJRCustomers customers);
 }
