@@ -7,6 +7,7 @@ import com.example.elastic.service.mybatic.AgentWechatMessageRepository;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,18 +59,19 @@ public class WechatMessageController {
     }
 
 
-    @GetMapping("query1")
-    public String query(){
+    @GetMapping("/elastic/query")
+    public String query(@RequestParam("content") String content,@RequestParam("agentName")String agentName){
 //        QueryBuilder builder = QueryBuilders.matchQuery("content","面试");
 //        MultiMatchQueryBuilder builder1 = QueryBuilders.multiMatchQuery("面试通过","content");
-        MatchPhraseQueryBuilder builder1 = QueryBuilders.matchPhraseQuery("content","面9090990试");
-        MatchPhraseQueryBuilder builder2 = QueryBuilders.matchPhraseQuery("agentName","丽姐");
+        MatchPhraseQueryBuilder builder1 = QueryBuilders.matchPhraseQuery("content",content);
+        MatchPhraseQueryBuilder builder2 = QueryBuilders.matchPhraseQuery("agentName",agentName);
         QueryBuilder qb = QueryBuilders.boolQuery().should(builder1).must(builder2);
 
 
         Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,"createTime");
-        Iterable<AgentWechatMessage>  messages =  agentWechatMessageElasticRepository.search(qb,pageable);
-        return "query wechat" ;
+        Page<AgentWechatMessage>  messages =  agentWechatMessageElasticRepository.search(qb,pageable);
+        List<AgentWechatMessage> list = messages.getContent();
+        return JSONObject.valueToString(list);
     }
 
     @RequestMapping("query2")

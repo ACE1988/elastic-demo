@@ -4,7 +4,9 @@ import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 import javax.persistence.Table;
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -18,7 +20,10 @@ import java.util.Date;
 @Table(name = "t_jjr_customer_comment")
 @Entity
 @Document(indexName = "customer",type = "comment")
-public class CustomerComment {
+public class CustomerComment implements Serializable {
+
+    @Id
+    private String id ;
 
     private String operatorId;
 
