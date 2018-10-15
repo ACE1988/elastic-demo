@@ -9,13 +9,8 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryShardContext;
-import org.elasticsearch.index.query.QueryStringQueryBuilder;
-import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +31,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 
 @RestController
@@ -131,12 +125,18 @@ public class CustomerController {
     //TODO 聚合查询
     @RequestMapping("aggregation")
     public String aggregation(){
+        TermsAggregationBuilder teamAgent= AggregationBuilders.terms("agg_agent ").field("agentId");
+        Date date = DateUtils.addDayToDate(new Date(),-20);
+        LOGGER.info("date={}",DateUtils.convert(date,DateUtils.DATE_TIME_FORMAT));
+        //时间范围
+        QueryBuilder filterBuilder = QueryBuilders.rangeQuery("registerTime").gt(date.getTime());
+
         SearchQuery query = new NativeSearchQueryBuilder()
-                .addAggregation(AggregationBuilders.terms("avg").field("agent"))
+                .withQuery(filterBuilder)
+                .addAggregation(teamAgent)
                 .build();
-        int size = query.getAggregations().size();
-        Page<JJRCustomers> page =  customerElasticRepository.search(query);
-        LOGGER.info("aggregation size={}",page.getTotalPages());
+//        query.getQuery();
+        Page<JJRCustomers> page = customerElasticRepository.search(query);
         return "aggregation";
     }
 

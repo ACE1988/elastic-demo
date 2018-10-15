@@ -23,6 +23,4 @@ public interface CustomerRepository extends Repository<JJRCustomers,String> {
     @Query("update JJRCustomers  as cc set cc.agentId = :agentId where cc.userId = :userId")
     int updateByUserIdAndAgentId(@Param("userId") long userId,@Param("agentId") String agentId);
 
-
-
 }
