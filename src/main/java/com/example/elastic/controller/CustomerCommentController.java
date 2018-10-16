@@ -3,9 +3,8 @@ package com.example.elastic.controller;
 import com.example.elastic.entity.CustomerComment;
 import com.example.elastic.service.elastic.CustomerCommentElasticRepository;
 import com.example.elastic.service.mybatic.CustomerCommentRepository;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.sort.SortBuilders;
+import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.*;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,18 +64,51 @@ public class CustomerCommentController  {
     }
 
     @RequestMapping("elastic/comments")
-    public String queryCustomerCommentByComment(@RequestParam("comment") String comment){
-        QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery("comment",comment);
-//        QueryBuilder queryBuilder = QueryBuilders.multiMatchQuery(comment,"comment,userName,operatorName");
+    public String queryCustomerCommentByComment(@RequestParam("comment") String comment,
+                                                @RequestParam("operatorName") String operatorName){
+        MatchPhraseQueryBuilder builder1 = QueryBuilders.matchPhraseQuery("comment",comment);
+        MatchPhraseQueryBuilder builder2 = QueryBuilders.matchPhraseQuery("operatorName",operatorName);
+
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery().must(builder1).must(builder2);
         Pageable pageable = PageRequest.of(0,100, Sort.Direction.DESC,"createTime");
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
                 .withQuery(queryBuilder)
                 .withPageable(pageable)
-                //.withSort(SortBuilders.fieldSort("createTime"))
                 .build();
         Page<CustomerComment> commentPage = customerCommentElasticRepository.search(searchQuery);
         List<CustomerComment> list = commentPage.getContent();
         LOGGER.info("size={}",list.size());
         return JSONObject.valueToString(list);
+    }
+
+
+    @RequestMapping("elastic/term")
+    public String queryCommentTermQuery(@RequestParam("field") String field ,
+                                        @RequestParam("value") String value,
+                                        @RequestParam(value = "pageSize",defaultValue = "100") Integer pageSize,
+                                        @RequestParam(value = "pageNo",defaultValue = "0") Integer pageNo){
+
+        TermQueryBuilder builder = QueryBuilders.termQuery(field,value);
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        Page<CustomerComment> commentPage =  customerCommentElasticRepository.search(builder,pageable);
+        List<CustomerComment> list = commentPage.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
+    }
+
+    @RequestMapping("elastic/multi")
+    public String queryCommentMultiMatch(@RequestParam("field1") String field1 ,
+                                         @RequestParam("field2") String field2 ,
+                                         @RequestParam("value") String value,
+                                         @RequestParam(value = "pageSize",defaultValue = "100") Integer pageSize,
+                                         @RequestParam(value = "pageNo",defaultValue = "0") Integer pageNo){
+
+        MultiMatchQueryBuilder builder =  QueryBuilders.multiMatchQuery(value,field1,field2);
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        Page<CustomerComment> commentPage = customerCommentElasticRepository.search(builder,pageable);
+        List<CustomerComment> list = commentPage.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
+
     }
 }
