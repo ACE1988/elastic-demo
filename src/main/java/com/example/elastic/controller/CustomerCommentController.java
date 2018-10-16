@@ -87,8 +87,10 @@ public class CustomerCommentController  {
                                         @RequestParam(value = "pageSize",defaultValue = "100") Integer pageSize,
                                         @RequestParam(value = "pageNo",defaultValue = "0") Integer pageNo){
 
-        TermQueryBuilder builder = QueryBuilders.termQuery(field,value);
+        String [] values = value.split(",");
+        TermsQueryBuilder builder = QueryBuilders.termsQuery(field,values);
         Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        LOGGER.info("dsl={}",builder.toString());
         Page<CustomerComment> commentPage =  customerCommentElasticRepository.search(builder,pageable);
         List<CustomerComment> list = commentPage.getContent();
         LOGGER.info("size={}",list.size());
@@ -104,11 +106,43 @@ public class CustomerCommentController  {
 
         MultiMatchQueryBuilder builder =  QueryBuilders.multiMatchQuery(value,field1,field2);
         builder.type(MultiMatchQueryBuilder.Type.BEST_FIELDS);
-        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        builder.type(MultiMatchQueryBuilder.Type.CROSS_FIELDS);
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.DESC,"createTime");
         Page<CustomerComment> commentPage = customerCommentElasticRepository.search(builder,pageable);
         List<CustomerComment> list = commentPage.getContent();
         LOGGER.info("size={}",list.size());
         return JSONObject.valueToString(list);
 
+    }
+
+    @RequestMapping("elastic/matchPhrase")
+    public String queryCommentMatch(@RequestParam(value = "field" )String field ,
+                                    @RequestParam("comment") String comment,
+                                    @RequestParam("slop") Integer slop,
+                                    @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize,
+                                    @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo){
+        MatchPhraseQueryBuilder builder =  QueryBuilders.matchPhraseQuery(field,comment);
+        builder.slop(slop);
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.DESC,"createTime");
+        Page<CustomerComment> commentPage = customerCommentElasticRepository.search(builder,pageable);
+        List<CustomerComment> list = commentPage.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
+    }
+
+    @RequestMapping("elastic/prefixQuery")
+    public String matchPhrasePrefixQuery(@RequestParam(value = "field" )String field ,
+                                         @RequestParam("value") String value,
+                                         @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize,
+                                         @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo){
+
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.DESC,"createTime");
+        MatchPhrasePrefixQueryBuilder builder = QueryBuilders.matchPhrasePrefixQuery(field,value);
+        LOGGER.info("match phrase prefix dsl={}",builder.toString());
+        customerCommentElasticRepository.search(builder,pageable);
+        Page<CustomerComment> commentPage = customerCommentElasticRepository.search(builder,pageable);
+        List<CustomerComment> list = commentPage.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
     }
 }
