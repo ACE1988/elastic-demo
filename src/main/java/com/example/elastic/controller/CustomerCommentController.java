@@ -3,7 +3,6 @@ package com.example.elastic.controller;
 import com.example.elastic.entity.CustomerComment;
 import com.example.elastic.service.elastic.CustomerCommentElasticRepository;
 import com.example.elastic.service.mybatic.CustomerCommentRepository;
-import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.*;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -100,10 +99,11 @@ public class CustomerCommentController  {
     public String queryCommentMultiMatch(@RequestParam("field1") String field1 ,
                                          @RequestParam("field2") String field2 ,
                                          @RequestParam("value") String value,
-                                         @RequestParam(value = "pageSize",defaultValue = "100") Integer pageSize,
-                                         @RequestParam(value = "pageNo",defaultValue = "0") Integer pageNo){
+                                         @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize,
+                                         @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo){
 
         MultiMatchQueryBuilder builder =  QueryBuilders.multiMatchQuery(value,field1,field2);
+        builder.type(MultiMatchQueryBuilder.Type.BEST_FIELDS);
         Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
         Page<CustomerComment> commentPage = customerCommentElasticRepository.search(builder,pageable);
         List<CustomerComment> list = commentPage.getContent();
