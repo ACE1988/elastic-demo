@@ -97,6 +97,22 @@ public class CustomerCommentController  {
         return JSONObject.valueToString(list);
     }
 
+    @RequestMapping("elastic/commonTerm")
+    public String queryCommentCommonTermQuery(@RequestParam("field") String field ,
+                                        @RequestParam("value") String value,
+                                        @RequestParam(value = "pageSize",defaultValue = "100") Integer pageSize,
+                                        @RequestParam(value = "pageNo",defaultValue = "0") Integer pageNo){
+
+        String [] values = value.split(",");
+        CommonTermsQueryBuilder builder = QueryBuilders.commonTermsQuery(field,values);
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        LOGGER.info("dsl={}",builder.toString());
+        Page<CustomerComment> commentPage =  customerCommentElasticRepository.search(builder,pageable);
+        List<CustomerComment> list = commentPage.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
+    }
+
     @RequestMapping("elastic/multi")
     public String queryCommentMultiMatch(@RequestParam("field1") String field1 ,
                                          @RequestParam("field2") String field2 ,

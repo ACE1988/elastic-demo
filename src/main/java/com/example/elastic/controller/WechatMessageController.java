@@ -4,9 +4,8 @@ import com.example.elastic.Util.DateUtils;
 import com.example.elastic.entity.AgentWechatMessage;
 import com.example.elastic.service.elastic.AgentWechatMessageElasticRepository;
 import com.example.elastic.service.mybatic.AgentWechatMessageRepository;
-import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.elasticsearch.index.query.*;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,14 +14,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Modification History
@@ -85,5 +85,64 @@ public class WechatMessageController {
         long count = agentWechatMessageElasticRepository.countByAgentId(agentId);
         Page<AgentWechatMessage> list  =agentWechatMessageElasticRepository.findByAgentId(agentId,pageable);
         return "query wechat" ;
+    }
+
+    @RequestMapping("match")
+    public String match(@RequestParam("field") String field,
+                        @RequestParam("value") String value,
+                        @RequestParam("cutoffFrequency" ) Float cutoffFrequency,
+                        @RequestParam("should") String should,
+                        @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize,
+                        @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo){
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        MatchQueryBuilder builder = QueryBuilders.matchQuery(field,value);
+        builder.cutoffFrequency(cutoffFrequency);
+        builder.operator(Operator.AND);
+        builder.prefixLength(100);
+        builder.fuzzyTranspositions(true);
+        LOGGER.info("elastic match dsl ={}",builder.toString());
+        Page<AgentWechatMessage> page =  agentWechatMessageElasticRepository.search(builder,pageable);
+        List<AgentWechatMessage> list = page.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
+    }
+
+    @RequestMapping("multi")
+    public String multiMatch(@RequestParam("fields") String fields,
+                        @RequestParam("value") String value,
+                        @RequestParam(value = "cutoffFrequency" ,required = false) Float cutoffFrequency,
+                        @RequestParam(value = "tieBreaker",required = false) float tieBreaker,
+                        @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize,
+                        @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo){
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        String [] field = fields.split(",");
+        MultiMatchQueryBuilder builder = QueryBuilders.multiMatchQuery(value,field);
+        builder.cutoffFrequency(cutoffFrequency);
+        builder.operator(Operator.AND);
+        builder.tieBreaker(tieBreaker);
+        builder.type(MultiMatchQueryBuilder.Type.PHRASE_PREFIX);
+        LOGGER.info("elastic match dsl ={}",builder.toString());
+        Page<AgentWechatMessage> page =  agentWechatMessageElasticRepository.search(builder,pageable);
+        List<AgentWechatMessage> list = page.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
+    }
+
+    @RequestMapping("queryStringQuery")
+    public String queryStringQuery(@RequestParam("value") String value,
+                                   @RequestParam(value = "field",required = false) String field,
+                                   @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize,
+                                   @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo){
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
+        QueryStringQueryBuilder builder = QueryBuilders.queryStringQuery(value);
+        Map<String, Float> fields = new HashMap<>();
+        fields.put("agentName",0.5f);
+        fields.put("content",1f);
+        builder.fields(fields);
+        LOGGER.info("elastic match dsl ={}",builder.toString());
+        Page<AgentWechatMessage> page =  agentWechatMessageElasticRepository.search(builder,pageable);
+        List<AgentWechatMessage> list = page.getContent();
+        LOGGER.info("size={}",list.size());
+        return JSONObject.valueToString(list);
     }
 }
