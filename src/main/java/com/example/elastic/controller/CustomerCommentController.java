@@ -3,6 +3,7 @@ package com.example.elastic.controller;
 import com.example.elastic.entity.CustomerComment;
 import com.example.elastic.service.elastic.CustomerCommentElasticRepository;
 import com.example.elastic.service.mybatic.CustomerCommentRepository;
+import com.mongodb.util.JSON;
 import org.elasticsearch.index.query.*;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -13,11 +14,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
+import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -64,11 +67,14 @@ public class CustomerCommentController  {
 
     @RequestMapping("elastic/comments")
     public String queryCustomerCommentByComment(@RequestParam("comment") String comment,
-                                                @RequestParam("operatorName") String operatorName){
+                                                @RequestParam(value = "operatorName",required = false,defaultValue = "agentId") String operatorName){
         MatchPhraseQueryBuilder builder1 = QueryBuilders.matchPhraseQuery("comment",comment);
+        builder1.analyzer("standard");
         MatchPhraseQueryBuilder builder2 = QueryBuilders.matchPhraseQuery("operatorName",operatorName);
-
+        builder2.analyzer("standard");
         QueryBuilder queryBuilder = QueryBuilders.boolQuery().must(builder1).must(builder2);
+
+        LOGGER.info("match phrase query dsl={}",queryBuilder.toString());
         Pageable pageable = PageRequest.of(0,100, Sort.Direction.DESC,"createTime");
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
                 .withQuery(queryBuilder)
@@ -88,10 +94,13 @@ public class CustomerCommentController  {
                                         @RequestParam(value = "pageNo",defaultValue = "0") Integer pageNo){
 
         String [] values = value.split(",");
+
         TermsQueryBuilder builder = QueryBuilders.termsQuery(field,values);
+        //非评分模式
+        ConstantScoreQueryBuilder constantScoreQueryBuilder = QueryBuilders.constantScoreQuery(builder);
         Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"createTime");
-        LOGGER.info("dsl={}",builder.toString());
-        Page<CustomerComment> commentPage =  customerCommentElasticRepository.search(builder,pageable);
+        LOGGER.info("dsl={}",constantScoreQueryBuilder.toString());
+        Page<CustomerComment> commentPage =  customerCommentElasticRepository.search(constantScoreQueryBuilder,pageable);
         List<CustomerComment> list = commentPage.getContent();
         LOGGER.info("size={}",list.size());
         return JSONObject.valueToString(list);
@@ -161,4 +170,60 @@ public class CustomerCommentController  {
         LOGGER.info("size={}",list.size());
         return JSONObject.valueToString(list);
     }
+
+    @RequestMapping("elastic/filter")
+    public String filterQuery(@RequestParam(value = "field") String field,
+                              @RequestParam(value = "value") String value,
+                              @RequestParam(value = "field2") String field2,
+                              @RequestParam(value = "value2") String value2,
+                              @RequestParam(value = "field3") String field3,
+                              @RequestParam(value = "value3") String value3){
+        MatchPhraseQueryBuilder builder1 =  QueryBuilders.matchPhraseQuery(field,value);
+        MatchPhraseQueryBuilder builder2 =  QueryBuilders.matchPhraseQuery(field2,value2);
+        MatchPhraseQueryBuilder builder3 = QueryBuilders.matchPhraseQuery(field3,value3);
+        BoolQueryBuilder queryBuilder2 = QueryBuilders.boolQuery().must(builder3);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(builder1).should(builder2).must(queryBuilder2);
+        ConstantScoreQueryBuilder constantScoreQueryBuilder = QueryBuilders.constantScoreQuery(queryBuilder);
+        LOGGER.info("filter query dsl ={}",constantScoreQueryBuilder.toString());
+        Iterable<CustomerComment> list = customerCommentElasticRepository.search(constantScoreQueryBuilder);
+        List<CustomerComment> result = new ArrayList<>();
+        list.forEach(item -> {
+            result.add(item);
+        });
+        return JSONObject.valueToString(result);
+    }
+
+    @RequestMapping("elastic/terms")
+    public String termsQuery(@RequestParam(value = "field") String field,
+                             @RequestParam(value = "value2",required = false) String value2,
+                             @RequestParam(value = "value1") String value1){
+        TermsQueryBuilder builder =  QueryBuilders.termsQuery(field,value1,value2);
+        ConstantScoreQueryBuilder queryBuilder = QueryBuilders.constantScoreQuery(builder);
+        LOGGER.info("terms dsl ={}",queryBuilder.toString());
+        Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,field);
+        Page<CustomerComment> page = customerCommentElasticRepository.search(queryBuilder,pageable);
+        return JSONObject.valueToString(page.getContent());
+    }
+
+    @RequestMapping("elastic/between")
+    public String betweenQuery(@RequestParam(value = "field") String field,
+                               @RequestParam(value = "value2",required = false) String value2,
+                               @RequestParam(value = "value1") String value1 ){
+        RangeQueryBuilder builder =  QueryBuilders.rangeQuery(field).gte(value1).lte(value2);
+        Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,field);
+        LOGGER.info("terms dsl ={}",builder.toString());
+        Page<CustomerComment> page = customerCommentElasticRepository.search(builder,pageable);
+        return JSONObject.valueToString(page.getContent());
+    }
+
+    @RequestMapping("elastic/exists")
+    public String existsQuery(@RequestParam("field") String field){
+        ExistsQueryBuilder existsQueryBuilder =  QueryBuilders.existsQuery(field);
+        ConstantScoreQueryBuilder queryBuilder = QueryBuilders.constantScoreQuery(existsQueryBuilder);
+        LOGGER.info("terms dsl ={}",queryBuilder.toString());
+        Pageable pageable = PageRequest.of(0,100, Sort.Direction.ASC,field);
+        Page<CustomerComment> page = customerCommentElasticRepository.search(queryBuilder,pageable);
+        return JSONObject.valueToString(page.getContent());
+    }
+
 }
