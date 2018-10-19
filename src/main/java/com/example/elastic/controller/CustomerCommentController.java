@@ -4,6 +4,7 @@ import com.example.elastic.entity.CustomerComment;
 import com.example.elastic.service.elastic.CustomerCommentElasticRepository;
 import com.example.elastic.service.mybatic.CustomerCommentRepository;
 import com.mongodb.util.JSON;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.*;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -43,12 +44,19 @@ public class CustomerCommentController  {
         return "ccc";
     }
 
-
     @RequestMapping("elastic")
-    public String saveCustomerCommentElastic(@RequestParam("startUserId") long startUserId,
-                                             @RequestParam("endUserId") long endUserId){
+    public String saveCustomerCommentElastic(@RequestParam(value = "startUserId",required = false,defaultValue = "0") long startUserId,
+                                             @RequestParam(value = "endUserId",required = false,defaultValue = "0") long endUserId,
+                                             @RequestParam(value = "createTime") String createTime){
+        List<CustomerComment> list = new ArrayList<>();
+        if(startUserId > 0 && endUserId > 0){
+            list = customerCommentRepository.findAllByUserIdBetween(startUserId,endUserId);
+        }
+        if(StringUtils.isNotBlank(createTime)){
 
-        List<CustomerComment> list = customerCommentRepository.findAllByUserIdBetween(startUserId,endUserId);
+            customerCommentElasticRepository.
+        }
+
         LOGGER.info("size={}",list.size());
         if(list.size() > 0){
             customerCommentElasticRepository.saveAll(list);

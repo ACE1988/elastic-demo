@@ -10,5 +10,7 @@ public interface CustomerCommentRepository extends Repository<CustomerComment,St
 
     List<CustomerComment> findAllByUserIdBetween(long startUserId, long endUserId);
 
+    List<CustomerComment> findAll
+
     List<CustomerComment> findAllByUserId(long userId);
 }
