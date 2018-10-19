@@ -1,5 +1,6 @@
 package com.example.elastic.controller;
 
+import com.example.elastic.Util.DateUtils;
 import com.example.elastic.entity.CustomerComment;
 import com.example.elastic.service.elastic.CustomerCommentElasticRepository;
 import com.example.elastic.service.mybatic.CustomerCommentRepository;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -47,14 +49,14 @@ public class CustomerCommentController  {
     @RequestMapping("elastic")
     public String saveCustomerCommentElastic(@RequestParam(value = "startUserId",required = false,defaultValue = "0") long startUserId,
                                              @RequestParam(value = "endUserId",required = false,defaultValue = "0") long endUserId,
-                                             @RequestParam(value = "createTime") String createTime){
+                                             @RequestParam(value = "createTime",required = false) String createTime){
         List<CustomerComment> list = new ArrayList<>();
         if(startUserId > 0 && endUserId > 0){
             list = customerCommentRepository.findAllByUserIdBetween(startUserId,endUserId);
         }
         if(StringUtils.isNotBlank(createTime)){
-
-            customerCommentElasticRepository.
+            Date date = DateUtils.convert(createTime);
+            list = customerCommentRepository.findAllByCreateTimeBefore(date);
         }
 
         LOGGER.info("size={}",list.size());
