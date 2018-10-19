@@ -9,8 +9,10 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,6 +88,30 @@ public class CustomerController {
 
         return "boolean";
     }
+
+    @RequestMapping("elastic/save")
+    public String saveCustomerElastic(@RequestParam("agentId") String agentId){
+
+        List<JJRCustomers> customers = customerRepository.queryAllByAgentId(agentId);
+        if(customers.size() > 0){
+            customerElasticRepository.saveAll(customers);
+        }
+        return "";
+    }
+
+
+    @RequestMapping("elastic/query")
+    public String queryCustomerElastic(@RequestParam("agentId") String agentId,
+                                       @RequestParam(value = "pageNo",required = false,defaultValue = "0") Integer pageNo,
+                                       @RequestParam(value = "pageSize",required = false,defaultValue = "100") Integer pageSize){
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("agentId",agentId);
+        Pageable pageable = PageRequest.of(pageNo,pageSize, Sort.Direction.ASC,"userId");
+        Page<JJRCustomers> page  = customerElasticRepository.search(termQueryBuilder,pageable);
+        LOGGER.info("total ={}",page.getTotalElements());
+        return JSONObject.valueToString(page.getContent());
+
+    }
+
 
 
     @RequestMapping("/update_template")

@@ -17,6 +17,8 @@ public interface CustomerRepository extends Repository<JJRCustomers,String> {
 
     List<JJRCustomers> queryAllByUserIdBetween(long startUserId, long endUserId);
 
+    List<JJRCustomers> queryAllByAgentId(String agentId);
+
     //update 需要添加事务
     @Transactional
     @Modifying
