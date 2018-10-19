@@ -56,7 +56,7 @@ public class CustomerCommentController  {
         }
         if(StringUtils.isNotBlank(createTime)){
             Date date = DateUtils.convert(createTime);
-            list = customerCommentRepository.findAllByCreateTimeBefore(date);
+            list = customerCommentRepository.findAllByCreateTimeAfter(date);
         }
 
         LOGGER.info("size={}",list.size());
